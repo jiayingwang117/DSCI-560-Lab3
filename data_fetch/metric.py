@@ -25,8 +25,7 @@ def handle_missing_values(df):
     """
     Handle missing values:
       - Sort the data by date,
-      - Use forward fill, then backward fill,
-      - Finally, fill remaining gaps using linear interpolation.
+      - Fill remaining gaps using linear interpolation.
     """
     df = df.sort_values(by='date').reset_index(drop=True)
     df.fillna(method='ffill', inplace=True)

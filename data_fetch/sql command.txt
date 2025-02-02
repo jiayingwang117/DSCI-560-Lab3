@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS daily_metrics (
+    symbol VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    daily_return DOUBLE,
+    cumulative_return DOUBLE,
+    SMA_10 DOUBLE,
+    volatility_20 DOUBLE,
+    PRIMARY KEY (symbol, date)
+);

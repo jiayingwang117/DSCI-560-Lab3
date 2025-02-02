@@ -1,0 +1,34 @@
+mysql -u root -p
+
+CREATE DATABASE stock_analysis;
+USE stock_analysis;
+
+CREATE TABLE portfolios (
+    portfolio_id INT AUTO_INCREMENT PRIMARY KEY,
+    portfolio_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE portfolio_stocks (
+    portfolio_id INT NOT NULL,
+    symbol VARCHAR(10) NOT NULL,
+    PRIMARY KEY (portfolio_id, symbol),
+    FOREIGN KEY (portfolio_id) REFERENCES portfolios (portfolio_id)
+      ON DELETE CASCADE
+);
+
+CREATE TABLE stock_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    symbol VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    open_price DOUBLE NOT NULL,
+    high_price DOUBLE NOT NULL,
+    low_price DOUBLE NOT NULL,
+    close_price DOUBLE NOT NULL,
+    volume BIGINT NOT NULL,
+    INDEX idx_symbol_date (symbol, date)
+);
+
+ALTER TABLE stock_data
+ADD UNIQUE KEY unique_symbol_date (symbol, date);
+
+

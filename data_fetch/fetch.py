@@ -28,7 +28,7 @@ def get_portfolio_id_by_name(portfolio_name):
 
 def create_portfolio(portfolio_name):
     """
-    Inserts a new portfolio into the portfolios table.
+    Inserts a new portfolio into the portfolios table with a creation date.
     Returns the newly generated or existing portfolio_id.
     """
     existing_portfolio_id = get_portfolio_id_by_name(portfolio_name)
@@ -37,11 +37,12 @@ def create_portfolio(portfolio_name):
         print(f"Portfolio '{portfolio_name}' already exists with ID = {existing_portfolio_id}.")
         return existing_portfolio_id
     else:
-        # Create new portfolio
+        # Create new portfolio with the current date as the creation date.
         conn = create_connection()
         cursor = conn.cursor()
-        sql = "INSERT INTO portfolios (portfolio_name) VALUES (%s)"
-        cursor.execute(sql, (portfolio_name,))
+        creation_date = datetime.date.today()  # You can use datetime.datetime.now() if you need the time as well.
+        sql = "INSERT INTO portfolios (portfolio_name, creation_date) VALUES (%s, %s)"
+        cursor.execute(sql, (portfolio_name, creation_date))
         conn.commit()
         portfolio_id = cursor.lastrowid
         cursor.close()
@@ -72,6 +73,26 @@ def add_stock_to_portfolio(portfolio_id, symbol):
     except mysql.connector.Error as err:
         # Possibly a duplicate (portfolio_id, symbol)
         print(f"Error adding {symbol}: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+def remove_stock_from_portfolio(portfolio_id, symbol):
+    """
+    Removes a stock (symbol) from the specified portfolio.
+    """
+    conn = create_connection()
+    cursor = conn.cursor()
+    try:
+        sql = "DELETE FROM portfolio_stocks WHERE portfolio_id = %s AND symbol = %s"
+        cursor.execute(sql, (portfolio_id, symbol.upper()))
+        conn.commit()
+        if cursor.rowcount > 0:
+            print(f"'{symbol}' removed from portfolio ID {portfolio_id}.")
+        else:
+            print(f"'{symbol}' not found in portfolio ID {portfolio_id}.")
+    except mysql.connector.Error as err:
+        print(f"Error removing {symbol}: {err}")
     finally:
         cursor.close()
         conn.close()
@@ -124,7 +145,6 @@ def fetch_and_store_stock_data(symbol, start_date, end_date):
     count_inserted = 0
 
     for _, row in df.iterrows():
-        # print(row)
         try:
             data_tuple = (
                 symbol,
@@ -147,19 +167,18 @@ def fetch_and_store_stock_data(symbol, start_date, end_date):
     cursor.close()
     conn.close()
 
-
-
 def main():
-    # Simple menu
+    # Updated menu with an option to remove a stock
     print("Welcome to the Stock Manager!")
     print("1) Create or reuse a portfolio and add stocks")
-    print("2) Exit (do nothing)")
-    choice = input("Enter your choice (1 or 2): ")
+    print("2) Remove a stock from a portfolio")
+    print("3) Exit (do nothing)")
+    choice = input("Enter your choice (1, 2, or 3): ").strip()
 
-    if choice.strip() == "1":
+    if choice == "1":
         # Get or create portfolio
-        portfolio_name = input("Enter a name for your portfolio: ")
-        if not portfolio_name.strip():
+        portfolio_name = input("Enter a name for your portfolio: ").strip()
+        if not portfolio_name:
             print("No portfolio name entered. Exiting.")
             return
         
@@ -192,6 +211,26 @@ def main():
             fetch_and_store_stock_data(symbol, start_date, end_date)
 
         print("Data collection complete.")
+
+    elif choice == "2":
+        # Remove a stock from an existing portfolio
+        portfolio_name = input("Enter the portfolio name: ").strip()
+        if not portfolio_name:
+            print("No portfolio name entered. Exiting.")
+            return
+
+        portfolio_id = get_portfolio_id_by_name(portfolio_name)
+        if not portfolio_id:
+            print(f"Portfolio '{portfolio_name}' does not exist. Exiting.")
+            return
+
+        symbol = input("Enter the stock symbol to remove: ").strip().upper()
+        if not symbol:
+            print("No symbol entered. Exiting.")
+            return
+
+        remove_stock_from_portfolio(portfolio_id, symbol)
+
     else:
         print("No action taken. Goodbye!")
         return
